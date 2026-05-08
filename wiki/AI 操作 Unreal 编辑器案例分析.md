@@ -47,7 +47,7 @@ updated: '2026-05-08'
 适合借鉴的点：
 
 - Remote Control API 负责对象属性和函数调用。
-- MCP 工具层把低层对象路径、函数名和 JSON 请求包装成稳定工具。
+- MCP 工具层把底层对象路径、函数名和 JSON 请求包装成稳定工具。
 - 复杂编辑能力不要硬塞进 Remote Control API，应该交给专用编辑器插件。
 
 ## 案例 2：py-ue5-mcp-server
