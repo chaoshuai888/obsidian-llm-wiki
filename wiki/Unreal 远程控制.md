@@ -143,6 +143,8 @@ Remote Control 本质上是在开放项目内部控制面。不要把 Remote Con
 
 如果用户给的是对象路径或蓝图函数名，要确认它在当前运行上下文中真实存在。编辑器、PIE、独立游戏和打包运行时的对象生命周期不同，远程调用应以实际可查询结果为准。
 
+相关案例可参考 [[AI 操作 Unreal 编辑器案例分析]]，其中区分了 Epic Remote Control API、Python Remote Execution、自定义 C++ 插件桥和编辑器内 Agent 的不同架构。
+
 ## 验证
 
 - 官方总览页标题为 Unreal Engine 5.7 的“虚幻引擎远程控制”，描述为“在客户端远程操作虚幻引擎项目”。
