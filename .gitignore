@@ -1,0 +1,11 @@
+.olw/
+.obsidian/workspace*
+.obsidian/cache/
+.trash/
+
+*.tmp
+*.log
+*.sqlite
+*.sqlite-shm
+*.sqlite-wal
+
