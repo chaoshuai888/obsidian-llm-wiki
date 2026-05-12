@@ -12,6 +12,8 @@ sources:
 - https://elevenlabs.io/docs/eleven-api/resources/libraries
 - https://elevenlabs.io/docs/overview/models
 - https://github.com/elevenlabs/skills/blob/main/sound-effects/SKILL.md
+- raw/AI/2026-05-12-elevenlabs-sfx-prompt-writing.md
+- https://elevenlabs.io/docs/eleven-agents/best-practices/prompting-guide
 status: published
 tags:
 - elevenlabs
@@ -20,7 +22,7 @@ tags:
 - game-audio
 - audio-generation
 title: ElevenLabs 音效生成
-updated: '2026-05-11'
+updated: '2026-05-12'
 ---
 
 # ElevenLabs 音效生成
@@ -122,6 +124,68 @@ curl -X POST "https://api.elevenlabs.io/v1/sound-generation?output_format=mp3_44
 声源 + 动作 + 材质/空间 + 风格 + 用途 + 约束
 ```
 
+更可控的制作公式：
+
+```text
+声源/发声物 + 动作/包络 + 材质/质感 + 运动 + 空间/混音 + 用途/风格 + 时长 + 排除项
+```
+
+写音效 prompt 时，优先描述“能被听见的东西”，不要把篇幅花在剧情、镜头和世界观。`red dragon fireball` 不如 `large fiery whoosh into a short explosive impact, crackling ember tail, no music` 稳定；前者主要是概念，后者给了模型可生成的声学线索。
+
+每个槽位的作用：
+
+```text
+声源/发声物：fire, glass, metal, leather, electricity, wind
+动作/包络：click, crack, whoosh, swell, burst, impact, decay
+材质/质感：brittle, wet, dusty, metallic, crystalline, smoky
+运动：rising, falling, fast pass-by, spinning, pulsing, scattered
+空间/混音：close microphone, dry studio, wide stereo, distant cave, short reverb
+用途/风格：game UI, fantasy RPG spell, cinematic transition, realistic foley
+时长：short one-shot, 1 second, 3 second tail, seamless loop
+排除项：no music, no vocals, no melody, no intelligible speech
+```
+
+Conversational AI Prompting Guide 对 Sound Effects 的帮助是间接的：它不负责告诉模型“火球应该怎么响”，但可以用来设计一个稳定的音效 prompt 生成器。把生成器的 system prompt 分成 `Goal`、`Output format`、`Rules`、`Examples`、`Failure fixes`，要求它输出固定字段和最终 prompt；把 `no music, no vocals, no melody`、每条 prompt 只描述一个事件、复杂技能必须拆阶段这类规则放进 Guardrails。这样比让模型自由发挥一大段描述更稳定。
+
+音效 prompt 生成器的输出格式可以固定为：
+
+```text
+Asset: <asset_id>
+Purpose: <where this sound is used>
+Phase: <one-shot | loop | charge | cast | travel | impact | tail>
+Duration: <seconds or auto>
+Loop: <true | false>
+Prompt influence: <0.0-1.0>
+Final prompt: <one concise ElevenLabs prompt>
+Notes: <what to check by ear>
+```
+
+好 prompt 通常有三层信息：先说声音事件，再说质感/空间，最后说禁用项。例如：
+
+```text
+Short sci-fi UI confirm click, bright glassy digital blip,
+close and dry, one-shot, no music, no vocals
+```
+
+不稳定 prompt 的常见问题：
+
+- 只写视觉或剧情：`an epic dragon attack in a burning castle`。
+- 一条里塞太多事件：`charge, fly, hit, explode, burn the ground, enemies scream`。
+- 形容词互相打架：`tiny massive soft explosive thunder click`。
+- 忘记排除项，导致结果带旋律、人声或像音乐 stinger。
+- 用抽象评价代替声音线索：`make it awesome, premium, powerful`。
+
+把失败反馈转成 prompt 修改：
+
+```text
+太像音乐：加 sound effect, one-shot, no music, no melody；缩短时长。
+太散：提高 prompt_influence，删掉次要设定，只保留一个声音事件。
+太单薄：加入材质、低频/高频、尾音和空间描述。
+太长或拖尾：指定 short transient, short decay, 0.8 seconds。
+循环有跳点：写 seamless loop，开启 loop，并在 DAW/引擎里复听。
+有可辨识人声：加 no vocals, non-verbal, no intelligible speech。
+```
+
 简单音效用短句，先让模型聚焦单一事件。例如：`glass shattering on concrete`、`heavy wooden door creaking open`、`thunder rumbling in the distance`。
 
 更稳定的制作 prompt 可以补充录音质量、材质、距离、空间和用途。例如：
@@ -132,6 +196,147 @@ close microphone, foley sound effect, no music
 ```
 
 复杂序列可以描述事件顺序，但官方 Help Center 建议最佳实践是拆成单独音效再在音频编辑器里组合。比如“走廊脚步、开门、摔下楼梯”不要一次生成一个长 prompt；更可控的做法是分别生成脚步、门轴、跌落冲击和滚落碎响。
+
+## 复杂游戏技能音效 Prompt
+
+复杂技能音效不要只写一个超长 prompt。更稳定的做法是把技能拆成阶段和层，每个阶段单独生成 one-shot 或 loop，再在 DAW、MetaSound、FMOD 或 Wwise 中组合。
+
+常见阶段：
+
+```text
+charge   蓄力、预警、能量聚集
+cast     释放瞬间、手势、法阵触发
+travel   飞行、挥砍、轨迹、弹道
+impact   命中、爆炸、破碎、打击
+tail     尾音、余烬、回响、消散
+ambience 持续 aura、地面效果、环境层
+```
+
+通用模板：
+
+```text
+High-quality game sound effect, <element> <skill action>,
+<phase>, <materials and texture>, <energy or movement>,
+<camera distance or mix style>, one-shot, no music, no vocals, no melody
+```
+
+持续层模板：
+
+```text
+Seamless loop, high-quality game sound effect, <element> aura or ambience,
+<texture>, <motion>, subtle variation, no music, no vocals, no melody
+```
+
+复杂技能的拆分示例：
+
+```text
+Fireball charge:
+High-quality fantasy game sound effect, magical fireball charging in the caster's hands,
+rising flame energy, soft crackling embers, low magical hum, close perspective,
+one-shot, no music, no vocals, no melody
+
+Fireball cast:
+High-quality fantasy game sound effect, fireball spell released forward,
+fast fiery whoosh, air pressure burst, bright ignition transient,
+one-shot, no music, no vocals, no melody
+
+Fireball impact:
+High-quality fantasy game sound effect, fireball impact explosion on stone,
+deep impact, burst of flames, debris, short sub bass punch, cinematic but game-ready,
+one-shot, no music, no vocals, no melody
+
+Fireball tail:
+High-quality fantasy game sound effect, burning embers fading after a magic explosion,
+small crackles, smoky fire tail, short decay, no music, no vocals, no melody
+```
+
+冰系技能：
+
+```text
+Ice charge:
+High-quality fantasy game sound effect, ice magic charging,
+crystalline shimmer, cold wind swirl, fragile glassy tension, close perspective,
+one-shot, no music, no vocals, no melody
+
+Ice travel:
+High-quality fantasy game sound effect, sharp ice shards launching forward,
+fast icy whoosh, glittering crystal particles, cutting air movement,
+one-shot, no music, no vocals, no melody
+
+Ice impact:
+High-quality fantasy game sound effect, ice projectile impact and shatter,
+crystal explosion, frozen debris, sharp transient, short low impact,
+one-shot, no music, no vocals, no melody
+```
+
+闪电链：
+
+```text
+Lightning charge:
+High-quality action RPG sound effect, electric spell charge,
+rising voltage, buzzing plasma, small sparks, tense high-frequency energy,
+one-shot, no music, no vocals, no melody
+
+Lightning chain:
+High-quality action RPG sound effect, chain lightning jumping between enemies,
+rapid electric arcs, crackling zaps, sharp stereo movement, bright transient hits,
+one-shot, no music, no vocals, no melody
+```
+
+暗影诅咒：
+
+```text
+Shadow cast:
+High-quality dark fantasy game sound effect, shadow curse being cast,
+low ghostly whoosh, whisper-like texture without human words, dark magical pulse,
+one-shot, no music, no vocals, no melody, no intelligible speech
+
+Shadow impact:
+High-quality dark fantasy game sound effect, cursed shadow impact on enemy,
+soft void burst, low thump, smoky magical decay, ominous tail,
+one-shot, no music, no vocals, no melody
+```
+
+治疗技能：
+
+```text
+Heal cast:
+High-quality fantasy game sound effect, healing spell activation,
+warm magical shimmer, soft bell-like sparkle, gentle upward energy,
+clean and comforting, one-shot, no music, no vocals, no melody
+
+Heal aura loop:
+Seamless loop, high-quality fantasy game sound effect, gentle healing aura,
+soft magical shimmer, warm light particles, subtle pulsing energy,
+no music, no vocals, no melody
+```
+
+参数建议：
+
+```text
+普通技能 one-shot:
+duration_seconds: 1 到 5
+prompt_influence: 0.5 到 0.75
+loop: false
+
+蓄力或持续 aura:
+duration_seconds: 6 到 20
+prompt_influence: 0.35 到 0.6
+loop: true
+
+短促技能反馈:
+duration_seconds: 0.5 到 1.2
+prompt_influence: 0.7 到 0.9
+loop: false
+```
+
+生产建议：
+
+- 每个 prompt 只负责一个阶段，不要同时要求蓄力、飞行、命中、燃烧和环境变化。
+- 用 `whoosh`、`impact`、`tail`、`drone`、`glitch`、`one-shot`、`seamless loop` 这类声音设计词汇。
+- 加 `no music, no vocals, no melody`，避免模型把技能音效生成成音乐片段。
+- 需要怪物声、吟唱或低语时，用 `non-verbal` 或 `no intelligible speech` 控制，不要让模型生成可辨识台词。
+- 在 Unreal 中用 MetaSound 分层、随机 pitch/volume、按技能等级混合，相关配置见 [[Unreal 音频系统与 MetaSounds]]。
 
 常用术语：
 

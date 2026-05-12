@@ -3,6 +3,9 @@
 .obsidian/cache/
 .trash/
 
+wiki/.obsidian/
+wiki/.drafts/
+
 *.tmp
 *.log
 *.sqlite
