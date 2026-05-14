@@ -16,3 +16,11 @@ title: Operation Log
 ## [2026-05-08 16:45] manual publish | AI 操作 Unreal 编辑器案例分析
 
 ## [2026-05-08 16:48] link | Unreal remote control case analysis
+
+## [2026-05-13] manual publish | Unreal 模拟端移动插值
+
+## [2026-05-13] manual publish | Unreal Motion Matching 核心原理
+
+## [2026-05-14] revise | Unreal 模拟端移动插值 Linear/Exponential explanations expanded
+
+## [2026-05-14] revise | Unreal 模拟端移动插值 smoothing mode use cases added

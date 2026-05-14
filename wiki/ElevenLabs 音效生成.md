@@ -14,6 +14,7 @@ sources:
 - https://github.com/elevenlabs/skills/blob/main/sound-effects/SKILL.md
 - raw/AI/2026-05-12-elevenlabs-sfx-prompt-writing.md
 - https://elevenlabs.io/docs/eleven-agents/best-practices/prompting-guide
+- raw/AI/2026-05-12-whirlwind-slash-sfx-prompt.md
 status: published
 tags:
 - elevenlabs
@@ -143,6 +144,52 @@ curl -X POST "https://api.elevenlabs.io/v1/sound-generation?output_format=mp3_44
 用途/风格：game UI, fantasy RPG spell, cinematic transition, realistic foley
 时长：short one-shot, 1 second, 3 second tail, seamless loop
 排除项：no music, no vocals, no melody, no intelligible speech
+```
+
+### 从游戏概念提炼为声音
+
+写游戏技能音效时，需求表里可以保留 `旋风斩`、`火球术`、`冰锥` 这类游戏概念；但最终喂给 ElevenLabs 的 prompt 应优先写“能听见的声音”。如果模型容易生成得太音乐化、太剧情化或太泛，最终 prompt 可以去掉 `game`、`RPG`、`skill`、`character` 等概念词，只保留声音事件和约束。
+
+转换步骤：
+
+```text
+1. 先写内部概念：旋风斩
+2. 拆出声音主体：巨剑 / 重型刀刃 / 空气
+3. 拆出动作：高速旋转 / 划过空气 / 重复呼啸
+4. 拆出质感：低频空气压力 / 金属刃口微光 / 密集旋涡
+5. 拆出空间：宽立体声旋转 / 环绕运动
+6. 明确不要什么：no impact, no tail ending, no music
+7. 再写最终 prompt
+```
+
+概念到声音的例子：
+
+```text
+旋风斩 -> oversized heavy sword rotating fast through air,
+repeating deep blade whooshes, dense circular wind vortex
+
+火球飞行 -> fast fiery whoosh, hot air pressure, crackling ember texture
+
+冰锥发射 -> sharp icy whoosh, crystalline shimmer, cutting air movement
+
+雷电链 -> rapid electric arcs, crackling zaps, bright transient jumps
+```
+
+如果只做循环层，不要写完整技能。循环层 prompt 要排除命中、爆发和结束尾音：
+
+```text
+Seamless loop sound effect, oversized heavy sword rotating fast through air,
+repeating deep blade whooshes, dense circular wind vortex,
+subtle metallic edge shimmer, strong low-frequency air movement,
+wide stereo rotation, no impact, no tail ending, no music, no vocals, no melody
+```
+
+循环层参数建议：
+
+```text
+duration_seconds: 4 到 8
+prompt_influence: 0.55 到 0.75
+loop: true
 ```
 
 Conversational AI Prompting Guide 对 Sound Effects 的帮助是间接的：它不负责告诉模型“火球应该怎么响”，但可以用来设计一个稳定的音效 prompt 生成器。把生成器的 system prompt 分成 `Goal`、`Output format`、`Rules`、`Examples`、`Failure fixes`，要求它输出固定字段和最终 prompt；把 `no music, no vocals, no melody`、每条 prompt 只描述一个事件、复杂技能必须拆阶段这类规则放进 Guardrails。这样比让模型自由发挥一大段描述更稳定。

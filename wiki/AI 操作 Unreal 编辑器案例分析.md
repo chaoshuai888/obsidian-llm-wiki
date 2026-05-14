@@ -182,6 +182,8 @@ Unreal Editor Plugin
 - 默认只监听 `127.0.0.1`，不要把编辑器控制端口暴露给不可信网络。
 - 给 Agent 返回结构化反馈：成功对象、错误、日志路径、截图、测试结果。
 
+如果目标是离线分析 Control Rig 资产内部图结构，而不是实时操作编辑器，可参考 [[Unreal Control Rig 资产解析]]。这类任务更适合用匹配版本的 `UnrealEditor-Cmd.exe -run=pythonscript` 加载资产并导出 RigVM 语义图。
+
 ## 关键判断
 
 Remote Control API 是很好的第一步，但不是完整的 AI Unreal 编辑器自动化平台。
