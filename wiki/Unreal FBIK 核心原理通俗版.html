@@ -1,0 +1,1666 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Unreal FootLock 案例：用脚步锁定看懂 FBIK</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #172026;
+      --soft-ink: #31414b;
+      --muted: #64727c;
+      --paper: #f5f7fa;
+      --panel: #ffffff;
+      --line: #d8e1e8;
+      --deep: #1f2c35;
+      --teal: #0f8b8d;
+      --coral: #e25f4f;
+      --gold: #d99a22;
+      --green: #4b9f59;
+      --blue: #2f6fb0;
+      --violet: #6658b3;
+      --shadow: 0 18px 48px rgba(23, 32, 38, 0.13);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      margin: 0;
+      color: var(--ink);
+      background: var(--paper);
+      font-family: "Microsoft YaHei", "PingFang SC", "Noto Sans SC", Arial, sans-serif;
+      font-size: 16px;
+      line-height: 1.72;
+      letter-spacing: 0;
+    }
+
+    .band {
+      width: 100%;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .band.dark {
+      color: #f7fbff;
+      background:
+        linear-gradient(125deg, rgba(15, 139, 141, 0.92), rgba(31, 44, 53, 0.98)),
+        #1f2c35;
+      border-bottom: 0;
+    }
+
+    .band.white {
+      background: #ffffff;
+    }
+
+    .inner {
+      width: min(1140px, calc(100% - 40px));
+      margin: 0 auto;
+      padding: 70px 0;
+    }
+
+    .hero {
+      display: grid;
+      grid-template-columns: minmax(0, 0.88fr) minmax(420px, 1.12fr);
+      gap: 44px;
+      align-items: center;
+      min-height: 700px;
+      padding: 64px 0 46px;
+    }
+
+    .eyebrow,
+    .kicker {
+      margin: 0 0 10px;
+      font-size: 13px;
+      font-weight: 850;
+      text-transform: uppercase;
+    }
+
+    .eyebrow {
+      color: rgba(247, 251, 255, 0.76);
+    }
+
+    .kicker {
+      color: var(--teal);
+    }
+
+    h1,
+    h2,
+    h3,
+    p {
+      margin-top: 0;
+    }
+
+    h1 {
+      margin-bottom: 18px;
+      max-width: 720px;
+      font-size: 46px;
+      line-height: 1.12;
+      font-weight: 900;
+    }
+
+    h2 {
+      margin-bottom: 16px;
+      font-size: 30px;
+      line-height: 1.24;
+    }
+
+    h3 {
+      margin-bottom: 8px;
+      font-size: 19px;
+      line-height: 1.34;
+    }
+
+    .lead {
+      max-width: 720px;
+      margin-bottom: 28px;
+      color: rgba(247, 251, 255, 0.88);
+      font-size: 18px;
+    }
+
+    .plain-lead {
+      max-width: 860px;
+      margin-bottom: 30px;
+      color: var(--muted);
+      font-size: 17px;
+    }
+
+    code {
+      padding: 0.12em 0.34em;
+      border-radius: 5px;
+      background: rgba(31, 44, 53, 0.08);
+      color: #1f3946;
+      font-family: Consolas, "Cascadia Mono", monospace;
+      font-size: 0.94em;
+    }
+
+    .hero-facts {
+      display: grid;
+      gap: 11px;
+      max-width: 680px;
+    }
+
+    .fact {
+      display: grid;
+      grid-template-columns: 34px minmax(0, 1fr);
+      gap: 12px;
+      align-items: start;
+      color: rgba(247, 251, 255, 0.92);
+    }
+
+    .fact span:first-child {
+      display: grid;
+      place-items: center;
+      width: 34px;
+      height: 34px;
+      border: 1px solid rgba(255, 255, 255, 0.28);
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.1);
+      font-weight: 900;
+    }
+
+    .case-stage {
+      position: relative;
+      min-height: 560px;
+      border: 1px solid rgba(255, 255, 255, 0.24);
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.1);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .stage-title {
+      position: absolute;
+      left: 22px;
+      top: 18px;
+      z-index: 3;
+      margin: 0;
+      color: rgba(255, 255, 255, 0.9);
+      font-size: 14px;
+      font-weight: 850;
+    }
+
+    .turn-field {
+      position: absolute;
+      inset: 58px 18px 74px;
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      border-radius: 8px;
+      background:
+        linear-gradient(rgba(255, 255, 255, 0.07) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.07) 1px, transparent 1px);
+      background-size: 38px 38px;
+    }
+
+    .actor-ring {
+      position: absolute;
+      left: 50%;
+      top: 52%;
+      width: 250px;
+      height: 250px;
+      border: 2px dashed rgba(255, 255, 255, 0.26);
+      border-radius: 50%;
+      transform: translate(-50%, -50%);
+    }
+
+    .mesh-body {
+      position: absolute;
+      left: 50%;
+      top: 49%;
+      width: 132px;
+      height: 218px;
+      transform: translate(-50%, -50%) rotate(-22deg);
+      transform-origin: 50% 60%;
+    }
+
+    .bone {
+      position: absolute;
+      height: 10px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.7);
+      transform-origin: 0 50%;
+      box-shadow: 0 0 0 1px rgba(23, 32, 38, 0.08);
+    }
+
+    .joint,
+    .foot,
+    .anchor {
+      position: absolute;
+      transform: translate(-50%, -50%);
+      z-index: 3;
+    }
+
+    .joint {
+      width: 24px;
+      height: 24px;
+      border: 3px solid rgba(255, 255, 255, 0.9);
+      border-radius: 50%;
+      background: var(--teal);
+    }
+
+    .joint.pelvis {
+      width: 36px;
+      height: 36px;
+      background: var(--gold);
+    }
+
+    .foot {
+      width: 50px;
+      height: 24px;
+      border: 2px solid rgba(255, 255, 255, 0.9);
+      border-radius: 8px;
+      background: var(--violet);
+    }
+
+    .foot.locked {
+      background: var(--coral);
+    }
+
+    .anchor {
+      width: 42px;
+      height: 42px;
+      border: 3px solid rgba(255, 255, 255, 0.92);
+      border-radius: 8px;
+      background: var(--coral);
+      box-shadow: 0 10px 24px rgba(0, 0, 0, 0.22);
+    }
+
+    .anchor::before,
+    .anchor::after {
+      content: "";
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      background: rgba(255, 255, 255, 0.95);
+      transform: translate(-50%, -50%);
+    }
+
+    .anchor::before {
+      width: 22px;
+      height: 4px;
+    }
+
+    .anchor::after {
+      width: 4px;
+      height: 22px;
+    }
+
+    .pull-line {
+      position: absolute;
+      height: 2px;
+      border-top: 3px dashed rgba(255, 255, 255, 0.72);
+      transform-origin: 0 50%;
+      animation: pulse 1.45s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      50% {
+        filter: brightness(1.45);
+      }
+    }
+
+    .stage-label {
+      position: absolute;
+      z-index: 5;
+      padding: 7px 9px;
+      border-radius: 8px;
+      background: rgba(23, 32, 38, 0.58);
+      color: #ffffff;
+      font-size: 12px;
+      line-height: 1.35;
+      white-space: nowrap;
+    }
+
+    .stage-note {
+      position: absolute;
+      left: 18px;
+      right: 18px;
+      bottom: 18px;
+      z-index: 5;
+      margin: 0;
+      padding: 14px 16px;
+      border-radius: 8px;
+      background: rgba(23, 32, 38, 0.5);
+      color: rgba(247, 251, 255, 0.88);
+      font-size: 14px;
+    }
+
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 18px;
+      margin-top: 30px;
+    }
+
+    .card {
+      padding: 23px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+      box-shadow: 0 12px 30px rgba(23, 32, 38, 0.07);
+    }
+
+    .card p {
+      margin-bottom: 0;
+      color: var(--muted);
+    }
+
+    .icon {
+      display: grid;
+      place-items: center;
+      width: 44px;
+      height: 44px;
+      margin-bottom: 16px;
+      border-radius: 8px;
+      color: #ffffff;
+      font-size: 20px;
+      font-weight: 900;
+    }
+
+    .icon.teal {
+      background: var(--teal);
+    }
+
+    .icon.coral {
+      background: var(--coral);
+    }
+
+    .icon.gold {
+      background: var(--gold);
+    }
+
+    .timeline {
+      display: grid;
+      grid-template-columns: repeat(7, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 32px;
+    }
+
+    .step {
+      position: relative;
+      min-height: 190px;
+      padding: 18px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #ffffff;
+    }
+
+    .step::after {
+      content: "";
+      position: absolute;
+      top: 36px;
+      right: -10px;
+      width: 10px;
+      height: 2px;
+      background: var(--line);
+    }
+
+    .step:last-child::after {
+      display: none;
+    }
+
+    .step-no {
+      display: grid;
+      place-items: center;
+      width: 32px;
+      height: 32px;
+      margin-bottom: 12px;
+      border-radius: 8px;
+      background: var(--deep);
+      color: #ffffff;
+      font-weight: 900;
+    }
+
+    .step p {
+      margin-bottom: 0;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .split {
+      display: grid;
+      grid-template-columns: minmax(0, 0.9fr) minmax(410px, 1.1fr);
+      gap: 34px;
+      align-items: start;
+    }
+
+    .data-list {
+      display: grid;
+      gap: 12px;
+    }
+
+    .data-row {
+      display: grid;
+      grid-template-columns: 190px minmax(0, 1fr);
+      gap: 14px;
+      padding: 15px 16px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #ffffff;
+    }
+
+    .data-row strong {
+      color: var(--soft-ink);
+    }
+
+    .data-row span {
+      color: var(--muted);
+    }
+
+    .flow-box {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #ffffff;
+      overflow: hidden;
+      box-shadow: 0 12px 30px rgba(23, 32, 38, 0.07);
+    }
+
+    .flow-head {
+      padding: 18px 20px;
+      background: rgba(15, 139, 141, 0.1);
+      color: var(--teal);
+      font-weight: 900;
+    }
+
+    .flow-body {
+      padding: 20px;
+    }
+
+    .formula {
+      margin: 0 0 14px;
+      padding: 16px;
+      border-radius: 8px;
+      background: var(--deep);
+      color: #f7fbff;
+      font-family: Consolas, "Cascadia Mono", monospace;
+      font-size: 14px;
+      line-height: 1.65;
+      overflow-x: auto;
+    }
+
+    .map-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+      margin-top: 28px;
+    }
+
+    .map-card {
+      padding: 22px;
+      border: 1px solid var(--line);
+      border-top: 5px solid var(--teal);
+      border-radius: 8px;
+      background: #ffffff;
+    }
+
+    .map-card:nth-child(2) {
+      border-top-color: var(--coral);
+    }
+
+    .map-card:nth-child(3) {
+      border-top-color: var(--gold);
+    }
+
+    .map-card:nth-child(4) {
+      border-top-color: var(--green);
+    }
+
+    .map-card p {
+      margin-bottom: 0;
+      color: var(--muted);
+    }
+
+    .contrast {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-top: 28px;
+    }
+
+    .contrast-card {
+      padding: 22px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #ffffff;
+    }
+
+    .contrast-card.lock {
+      border-top: 5px solid var(--coral);
+    }
+
+    .contrast-card.release {
+      border-top: 5px solid var(--blue);
+    }
+
+    .contrast-card p,
+    .contrast-card li {
+      color: var(--muted);
+    }
+
+    .contrast-card ul {
+      margin: 12px 0 0;
+      padding-left: 22px;
+    }
+
+    .debug-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+      margin-top: 28px;
+    }
+
+    .debug-card {
+      padding: 20px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.1);
+    }
+
+    .debug-card h3,
+    .debug-card p {
+      color: #f7fbff;
+    }
+
+    .debug-card p {
+      margin-bottom: 0;
+      opacity: 0.84;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      min-height: 26px;
+      margin-right: 8px;
+      padding: 2px 8px;
+      border-radius: 6px;
+      background: rgba(15, 139, 141, 0.12);
+      color: var(--teal);
+      font-size: 12px;
+      font-weight: 900;
+      white-space: nowrap;
+    }
+
+    .anim-shell {
+      display: grid;
+      grid-template-columns: minmax(0, 1.25fr) minmax(300px, 0.75fr);
+      gap: 24px;
+      align-items: stretch;
+      margin-top: 30px;
+    }
+
+    .canvas-panel {
+      position: relative;
+      min-height: 520px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #ffffff;
+      box-shadow: 0 12px 30px rgba(23, 32, 38, 0.07);
+      overflow: hidden;
+    }
+
+    #pbikCanvas {
+      display: block;
+      width: 100%;
+      height: 520px;
+    }
+
+    .canvas-badge {
+      position: absolute;
+      left: 16px;
+      top: 16px;
+      padding: 8px 10px;
+      border-radius: 8px;
+      background: rgba(31, 44, 53, 0.78);
+      color: #ffffff;
+      font-size: 13px;
+      font-weight: 850;
+      pointer-events: none;
+    }
+
+    .anim-panel {
+      display: grid;
+      gap: 14px;
+      align-content: start;
+      padding: 22px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #ffffff;
+      box-shadow: 0 12px 30px rgba(23, 32, 38, 0.07);
+    }
+
+    .anim-readout {
+      display: grid;
+      gap: 10px;
+      padding: 14px;
+      border-radius: 8px;
+      background: rgba(15, 139, 141, 0.08);
+    }
+
+    .readout-row {
+      display: grid;
+      grid-template-columns: 120px minmax(0, 1fr);
+      gap: 10px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .readout-row strong {
+      color: var(--soft-ink);
+    }
+
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    button {
+      min-height: 38px;
+      padding: 8px 12px;
+      border: 1px solid var(--deep);
+      border-radius: 8px;
+      background: var(--deep);
+      color: #ffffff;
+      font: inherit;
+      font-weight: 850;
+      cursor: pointer;
+    }
+
+    button.secondary {
+      border-color: var(--line);
+      background: #ffffff;
+      color: var(--soft-ink);
+    }
+
+    button:focus-visible,
+    input:focus-visible {
+      outline: 3px solid rgba(15, 139, 141, 0.28);
+      outline-offset: 2px;
+    }
+
+    .slider-row {
+      display: grid;
+      gap: 8px;
+      color: var(--soft-ink);
+      font-weight: 850;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      accent-color: var(--teal);
+    }
+
+    .legend-list {
+      display: grid;
+      gap: 9px;
+      margin-top: 4px;
+    }
+
+    .legend-item {
+      display: grid;
+      grid-template-columns: 16px minmax(0, 1fr);
+      gap: 9px;
+      align-items: center;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .swatch {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: var(--teal);
+    }
+
+    .swatch.target {
+      border-radius: 5px;
+      background: var(--coral);
+    }
+
+    .swatch.input {
+      background: var(--gold);
+    }
+
+    .swatch.solved {
+      background: var(--teal);
+    }
+
+    .swatch.helper {
+      background: var(--green);
+    }
+
+    details {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #ffffff;
+      overflow: hidden;
+    }
+
+    details + details {
+      margin-top: 12px;
+    }
+
+    summary {
+      cursor: pointer;
+      padding: 18px 20px;
+      color: var(--soft-ink);
+      font-weight: 900;
+    }
+
+    details p {
+      margin: 0;
+      padding: 0 20px 20px;
+      color: var(--muted);
+    }
+
+    .footer {
+      color: rgba(247, 251, 255, 0.78);
+      font-size: 14px;
+    }
+
+    .footer strong {
+      color: #ffffff;
+    }
+
+    @media (max-width: 1100px) {
+      .timeline {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .step::after {
+        display: none;
+      }
+    }
+
+    @media (max-width: 960px) {
+      .hero,
+      .split {
+        grid-template-columns: 1fr;
+      }
+
+      .hero {
+        min-height: auto;
+      }
+
+      .case-stage {
+        min-height: 530px;
+      }
+
+      .summary-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 700px) {
+      body {
+        font-size: 15px;
+      }
+
+      .inner {
+        width: min(100% - 28px, 1140px);
+        padding: 48px 0;
+      }
+
+      h1 {
+        font-size: 34px;
+      }
+
+      h2 {
+        font-size: 25px;
+      }
+
+      .lead,
+      .plain-lead {
+        font-size: 16px;
+      }
+
+      .case-stage {
+        min-height: 500px;
+      }
+
+      .turn-field {
+        inset: 58px 12px 82px;
+      }
+
+      .mesh-body {
+        transform: translate(-50%, -50%) rotate(-22deg) scale(0.82);
+      }
+
+      .actor-ring {
+        width: 210px;
+        height: 210px;
+      }
+
+      .stage-label {
+        font-size: 11px;
+      }
+
+      .timeline,
+      .map-grid,
+      .contrast,
+      .debug-grid,
+      .anim-shell {
+        grid-template-columns: 1fr;
+      }
+
+      .data-row {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <section class="band dark">
+      <div class="inner hero">
+        <div>
+          <p class="eyebrow">FootLock Case Study</p>
+          <h1>用脚步锁定案例，看懂 Unreal FBIK 到底在干什么</h1>
+          <p class="lead">
+            这次不抽象讲“全身 IK”。我们拿 <code>CRFL_FootLock</code> 做例子：角色技能强制转身时，先把一只脚在世界空间钉住，再用 PBIK 把腿链和骨盆反解回这个锁点，避免 Mesh 平滑旋转时脚底打滑。
+          </p>
+          <div class="hero-facts">
+            <div class="fact">
+              <span>1</span>
+              <div>C++ 在转身开始时采样轴脚世界坐标：这就是脚锁的锚点。</div>
+            </div>
+            <div class="fact">
+              <span>2</span>
+              <div>Control Rig 每帧把锁点转换成脚 effector 的目标位置。</div>
+            </div>
+            <div class="fact">
+              <span>3</span>
+              <div>PBIK 不直接“移动脚”，而是通过腿、骨盆和约束迭代，让脚尽量回到锁点。</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="case-stage" aria-label="脚步锁定案例示意图">
+          <p class="stage-title">Mesh 平滑转身时：右脚作为世界空间锚点</p>
+          <div class="turn-field">
+            <div class="actor-ring"></div>
+
+            <div class="mesh-body">
+              <span class="bone" style="left: 50%; top: 20%; width: 62px; transform: rotate(90deg);"></span>
+              <span class="bone" style="left: 50%; top: 46%; width: 78px; transform: rotate(63deg);"></span>
+              <span class="bone" style="left: 68%; top: 68%; width: 70px; transform: rotate(82deg);"></span>
+              <span class="bone" style="left: 50%; top: 46%; width: 78px; transform: rotate(117deg);"></span>
+              <span class="bone" style="left: 32%; top: 68%; width: 70px; transform: rotate(98deg);"></span>
+              <span class="bone" style="left: 50%; top: 24%; width: 62px; transform: rotate(34deg);"></span>
+              <span class="bone" style="left: 69%; top: 38%; width: 64px; transform: rotate(18deg);"></span>
+              <span class="bone" style="left: 50%; top: 24%; width: 62px; transform: rotate(146deg);"></span>
+              <span class="bone" style="left: 31%; top: 38%; width: 64px; transform: rotate(162deg);"></span>
+
+              <span class="joint" style="left: 50%; top: 20%;"></span>
+              <span class="joint pelvis" style="left: 50%; top: 46%;"></span>
+              <span class="joint" style="left: 68%; top: 68%;"></span>
+              <span class="joint" style="left: 32%; top: 68%;"></span>
+              <span class="foot locked" style="left: 73%; top: 92%; transform: translate(-50%, -50%) rotate(12deg);"></span>
+              <span class="foot" style="left: 27%; top: 92%; transform: translate(-50%, -50%) rotate(-8deg);"></span>
+            </div>
+
+            <span class="anchor" style="left: 64%; top: 82%;"></span>
+            <span class="pull-line" style="left: 63%; top: 76%; width: 82px; transform: rotate(72deg);"></span>
+            <span class="stage-label" style="left: 58%; top: 84%;">FootLockPos<br>世界空间锁点</span>
+            <span class="stage-label" style="left: 44%; top: 42%;">Pelvis Root<br>PBIK 反解根</span>
+            <span class="stage-label" style="left: 62%; top: 20%;">Mesh 从旧朝向<br>平滑追向新朝向</span>
+            <span class="stage-label" style="left: 20%; top: 73%;">另一只脚<br>继续跟随动画</span>
+          </div>
+          <p class="stage-note">
+            直觉：Actor 逻辑朝向已经瞬间转到目标方向，视觉 Mesh 还在补间。被选作轴的脚必须停在原地，于是 PBIK 每帧把这只脚拉回 <code>FootLockPos</code>。
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <section class="band white">
+      <div class="inner">
+        <p class="kicker">Case Summary</p>
+        <h2>这个脚锁到底解决什么问题</h2>
+        <p class="plain-lead">
+          技能转身时，逻辑 Actor 会先面向目标；为了视觉不突兀，Mesh 会从旧朝向平滑转过去。问题是：Mesh 旋转会带着脚底一起滑。FootLock 的做法是选一只脚当转向轴，把它临时钉在世界空间，再让腿部 IK 去补偿这段视觉旋转。
+        </p>
+
+        <div class="summary-grid">
+          <article class="card">
+            <div class="icon teal">因</div>
+            <h3>Actor 和 Mesh 暂时不同步</h3>
+            <p><code>FaceTarget</code> 先把 Actor 转到目标朝向，<code>StartMeshSmooth</code> 再把 Mesh 退回旧朝向，让视觉慢慢追过去。</p>
+          </article>
+
+          <article class="card">
+            <div class="icon coral">锁</div>
+            <h3>轴脚被保存成世界锚点</h3>
+            <p><code>RoatationAxis</code> 选择左脚或右脚。开始平滑转身那一帧，C++ 采样脚 socket 世界坐标，写入 <code>FootLockPos</code>。</p>
+          </article>
+
+          <article class="card">
+            <div class="icon gold">解</div>
+            <h3>PBIK 把腿链解回锁点</h3>
+            <p>Control Rig 把锁点变成脚目标，<code>ExcuteFootIK</code> 输入 PBIK。PBIK 负责让脚尽量贴到目标，并让骨盆和腿自然配合。</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="band">
+      <div class="inner">
+        <p class="kicker">Whole Pipeline</p>
+        <h2>完整链路：从技能 Notify 到 PBIK 求解</h2>
+        <p class="plain-lead">
+          这条链路很重要：左右脚不是 Control Rig 自己猜的，而是技能/动画 Notify 明确告诉系统哪只脚应该作为转向轴。
+        </p>
+
+        <div class="timeline">
+          <article class="step">
+            <div class="step-no">1</div>
+            <h3>AttackRotation</h3>
+            <p>蒙太奇 Notify 配置 <code>RoatationAxis</code>：左脚、右脚或不锁。</p>
+          </article>
+          <article class="step">
+            <div class="step-no">2</div>
+            <h3>读取轴脚</h3>
+            <p><code>GetRotationSmoothTime</code> 读取 Notify 时间和轴脚配置。</p>
+          </article>
+          <article class="step">
+            <div class="step-no">3</div>
+            <h3>Actor 先转</h3>
+            <p><code>FaceTarget</code> 立即设置 Actor 朝向，让逻辑先对准目标。</p>
+          </article>
+          <article class="step">
+            <div class="step-no">4</div>
+            <h3>采样锁点</h3>
+            <p><code>StartMeshSmooth</code> 把 Mesh 退回旧朝向，并采样轴脚世界坐标。</p>
+          </article>
+          <article class="step">
+            <div class="step-no">5</div>
+            <h3>Control Rig 维持目标</h3>
+            <p><code>CRFL_FootLock</code> 根据 Enable 标记持续输出脚锁目标。</p>
+          </article>
+          <article class="step">
+            <div class="step-no">6</div>
+            <h3>PBIK 反解</h3>
+            <p><code>ExcuteFootIK</code> 把脚目标输入 <code>RigUnit_PBIK</code>。</p>
+          </article>
+          <article class="step">
+            <div class="step-no">7</div>
+            <h3>ActorFollow</h3>
+            <p>锁脚期间把骨盆世界位置回传，补偿本地 Actor XY。</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="band white">
+      <div class="inner split">
+        <div>
+          <p class="kicker">Data Contract</p>
+          <h2>跨 C++、AnimBP、Control Rig 的数据约定</h2>
+          <p class="plain-lead">
+            脚锁能稳定工作，靠的是很小的一组数据。最核心的是两个 Enable、一个世界锁点、一个 IK Root 行为和一个是否投地的开关。
+          </p>
+          <div class="data-list">
+            <div class="data-row">
+              <strong><code>bEnableLFootLock</code></strong>
+              <span>是否锁左脚。</span>
+            </div>
+            <div class="data-row">
+              <strong><code>bEnableRFootLock</code></strong>
+              <span>是否锁右脚。</span>
+            </div>
+            <div class="data-row">
+              <strong><code>FootLockPos</code></strong>
+              <span>转身开始时采样到的轴脚世界坐标，是整个脚锁的锚点。</span>
+            </div>
+            <div class="data-row">
+              <strong><code>IkBeavior</code></strong>
+              <span>传给 PBIK 的 RootBehavior，决定骨盆/root 怎么参与。</span>
+            </div>
+            <div class="data-row">
+              <strong><code>ShouldBeOnGround</code></strong>
+              <span>是否把锁点再投到地面。Control Rig 资产变量拼作 <code>SholudBeOnGround</code>。</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="flow-box">
+          <div class="flow-head">锁点的核心数学</div>
+          <div class="flow-body">
+            <pre class="formula">开始锁定:
+AnchorWS = GetSocketLocation(AxisFootBone)
+FootLockPos = AnchorWS
+
+锁定期间:
+TargetFootWS = FootLockPos
+
+如果需要贴地:
+TargetFootWS = FootTrace(FootLockPos, FootHeight)</pre>
+            <p class="plain-lead" style="margin: 0;">
+              所以它不是每帧保存上一帧脚位置再补差，而是保存一个世界空间锚点。当前动画脚被 Mesh 旋转带走时，PBIK 会把脚 effector 拉回这个锚点。
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="band">
+      <div class="inner">
+        <p class="kicker">Lock Lifecycle</p>
+        <h2>锁定、投地、释放：三个阶段别混在一起</h2>
+        <p class="plain-lead">
+          FootLock 的目标点不是永远钉死。锁定时它等于世界锚点；可选投地时它会修正到地面；解锁后它会逐帧插值回动画脚，避免突然弹跳。
+        </p>
+
+        <div class="contrast">
+          <article class="contrast-card lock">
+            <h3><span class="badge">锁定中</span>脚目标固定在世界锚点</h3>
+            <p>当 <code>EnableLFootLock</code> 或 <code>EnableRFootLock</code> 为 true，对应脚使用 <code>FootLockPos</code> 或投地后的结果作为目标。</p>
+            <pre class="formula">TargetFootWS = FootLockPos
+DeltaWS = TargetFootWS - AnimatedFootWS
+PBIK 隐式吃掉这个差值</pre>
+            <ul>
+              <li>脚目标不跟随当前动画脚。</li>
+              <li>Mesh 旋转造成的脚滑由 IK 反向补偿。</li>
+              <li>如果 <code>SholudBeOnGround</code> 为 true，会先走 <code>FootTrace</code>。</li>
+            </ul>
+          </article>
+
+          <article class="contrast-card release">
+            <h3><span class="badge">解锁后</span>脚目标平滑交还给动画</h3>
+            <p>Enable 关闭后，Control Rig 不会立刻清空锁点，而是用 <code>LerpFootPos</code> 让旧目标逐帧追向当前动画脚。</p>
+            <pre class="formula">AnimatedFootWS = 当前动画脚世界位置
+NextTargetWS = Lerp(OldTargetWS, AnimatedFootWS, 0.5)
+
+如果 XY 距离小于 3:
+NextTargetWS = AnimatedFootWS</pre>
+            <ul>
+              <li>避免脚目标突然跳回动画位置。</li>
+              <li>接近后完全交还给动画。</li>
+              <li>需要贴地时，插值结果还会再过一次 <code>FootTrace</code>。</li>
+            </ul>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="band white">
+      <div class="inner">
+        <p class="kicker">Where FBIK Appears</p>
+        <h2>这个案例里，FBIK/PBIK 的角色很明确</h2>
+        <p class="plain-lead">
+          <code>CRFL_FootLock</code> 本身负责“脚目标应该在哪里”；真正让腿怎么弯、骨盆怎么配合的是 <code>ExcuteFootIK</code> 里的 PBIK。
+        </p>
+
+        <div class="map-grid">
+          <article class="map-card">
+            <h3>输入：脚锁目标</h3>
+            <p><code>LFootLockLocation</code> 或 <code>RFootLockLocation</code> 经过 <code>From World</code> 转换后，写入脚目标 Transform 的 Translation。</p>
+          </article>
+
+          <article class="map-card">
+            <h3>Effector：被钉住的脚</h3>
+            <p><code>FPBIKEffector.Bone</code> 是脚骨骼名，<code>Transform</code> 是锁点目标。默认位置、旋转、强度 alpha 都是满权重。</p>
+          </article>
+
+          <article class="map-card">
+            <h3>Root：骨盆</h3>
+            <p><code>PBIK.Root = PelvisBoneName</code>。这意味着腿和骨盆一起参与折中，而不是只扭小腿或只挪脚。</p>
+          </article>
+
+          <article class="map-card">
+            <h3>Settings：IKBehavior</h3>
+            <p><code>GetIKRootBeavior</code> 把外部整数转换成 PBIK 的 RootBehavior。它决定骨盆是预拉、锁住，还是自由参与。</p>
+          </article>
+        </div>
+
+        <pre class="formula" style="margin-top: 24px;">FootLockPos
+-> LFootLockLocation / RFootLockLocation
+-> From World
+-> FootIkInfo.BoneTransform.Translation
+-> FPBIKEffector.Transform
+-> RigUnit_PBIK.Solve()</pre>
+      </div>
+    </section>
+
+    <section class="band">
+      <div class="inner">
+        <p class="kicker">Interactive Animation</p>
+        <h2>动画演示：脚被锁住后，PBIK 如何分摊误差</h2>
+        <p class="plain-lead">
+          这个动画是教学版简化模型：用骨盆、膝盖、脚三点表示一条腿。脚的红色目标是 <code>FootLockPos</code>，金色虚线是输入动画姿势，青色实线是迭代后的求解结果。每一轮都会先把脚朝锁点拉，再用腿长约束把膝盖和骨盆修回来。
+        </p>
+
+        <div class="anim-shell">
+          <div class="canvas-panel">
+            <div class="canvas-badge">简化 PBIK 迭代示意</div>
+            <canvas id="pbikCanvas" width="860" height="520" aria-label="PBIK 根据脚锁点反解腿部姿势动画"></canvas>
+          </div>
+
+          <aside class="anim-panel">
+            <h3>观察重点</h3>
+            <p style="margin-bottom: 0; color: var(--muted);">
+              红色锁点不动。输入动画脚因为 Mesh 旋转已经偏离锁点；PBIK 的迭代会逐步减小脚误差，同时保持大腿和小腿长度大致不变。
+            </p>
+
+            <div class="anim-readout" aria-live="polite">
+              <div class="readout-row"><strong>迭代轮次</strong><span id="iterText">0 / 18</span></div>
+              <div class="readout-row"><strong>脚误差</strong><span id="errorText">0 px</span></div>
+              <div class="readout-row"><strong>当前阶段</strong><span id="phaseText">输入动画姿势</span></div>
+            </div>
+
+            <div class="controls">
+              <button id="playPbik" type="button">播放</button>
+              <button id="resetPbik" class="secondary" type="button">重置</button>
+            </div>
+
+            <label class="slider-row" for="iterSlider">
+              手动查看迭代
+              <input id="iterSlider" type="range" min="0" max="18" value="0">
+            </label>
+
+            <div class="legend-list" aria-label="动画图例">
+              <div class="legend-item"><span class="swatch input"></span><span>金色虚线：输入动画姿势</span></div>
+              <div class="legend-item"><span class="swatch target"></span><span>红色方块：FootLockPos 锁点</span></div>
+              <div class="legend-item"><span class="swatch solved"></span><span>青色实线：当前求解姿势</span></div>
+              <div class="legend-item"><span class="swatch helper"></span><span>绿色箭头：脚目标误差</span></div>
+            </div>
+
+            <p style="margin-bottom: 0; color: var(--muted); font-size: 14px;">
+              真实 UE PBIK 会处理更多 body、pin/joint constraints、stiffness、RootBehavior 和角度限制；这里保留的是最核心的直觉。
+            </p>
+          </aside>
+        </div>
+      </div>
+    </section>
+
+    <section class="band">
+      <div class="inner split">
+        <div>
+          <p class="kicker">Actor Follow</p>
+          <h2>为什么只锁脚还不够</h2>
+          <p class="plain-lead">
+            脚被 PBIK 锁住后，视觉 Mesh 可能和逻辑 Actor 胶囊体产生偏移。这个项目里用 <code>ActorFollow</code> 把骨盆世界位置回传给 <code>UMeshRotationSmoothCpt</code>，再在本地控制端补偿 Actor 的 XY。
+          </p>
+        </div>
+
+        <div class="flow-box">
+          <div class="flow-head">补偿思路</div>
+          <div class="flow-body">
+            <pre class="formula">锁脚期间:
+PelvisWS = ToWorld(Pelvis)
+ActorFollow(PelvisWS)
+
+下一帧:
+FollowMesh(NewLocation)
+UpdateMeshRotation()
+Actor.XY 跟随 Mesh
+Actor.Z 保持原高度</pre>
+            <p class="plain-lead" style="margin: 0;">
+              通俗说：脚钉住以后，角色视觉位置可能被 IK 拉出一点偏移。ActorFollow 把这点偏移同步给 Actor，减少胶囊体和 Mesh 脱节。
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="band dark">
+      <div class="inner">
+        <p class="eyebrow">Debug Checklist</p>
+        <h2>排查脚锁时按这条顺序看</h2>
+        <p class="lead">
+          这个功能跨 Notify、技能系统、Mesh 平滑组件、AnimBP、Control Rig 和 PBIK。别一开始就调 IK 参数，先确认数据有没有一路传到脚 effector。
+        </p>
+
+        <div class="debug-grid">
+          <article class="debug-card">
+            <h3>1. Notify 是否选了正确轴脚</h3>
+            <p>检查蒙太奇里的 <code>AttackRotation</code>，确认 <code>RoatationAxis</code> 是左脚、右脚还是 None。</p>
+          </article>
+          <article class="debug-card">
+            <h3>2. C++ 是否真的启用锁脚</h3>
+            <p>小于 <code>AngleThreshold = 5</code> 度、脚下 trace 失败、脚离地太高，都可能导致 Enable 没打开。</p>
+          </article>
+          <article class="debug-card">
+            <h3>3. AnimBP 是否把数据传给 Control Rig</h3>
+            <p>重点看 <code>Enable*FootLock</code>、<code>FootLockPos</code>、<code>IKBehavior</code> 和 <code>SholudBeOnGround</code>。</p>
+          </article>
+          <article class="debug-card">
+            <h3>4. 锁点是否写进脚目标</h3>
+            <p>检查对应侧的 <code>LFootLockLocation</code> / <code>RFootLockLocation</code>，以及 <code>From World</code> 后的目标 Translation。</p>
+          </article>
+          <article class="debug-card">
+            <h3>5. PBIK 是否收到正确 Root 和 Foot Bone</h3>
+            <p><code>PelvisBoneName</code>、<code>LFootBoneName</code>、<code>RFootBoneName</code> 错了，锁点再正确也解不到想要的链。</p>
+          </article>
+          <article class="debug-card">
+            <h3>6. ActorFollow 是否执行</h3>
+            <p>如果脚锁住但胶囊体和 Mesh 脱节，继续看 <code>FRigUnit_ActorFollow</code> 和本地端 Actor XY 补偿。</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="band white">
+      <div class="inner">
+        <p class="kicker">Takeaway</p>
+        <h2>用这个案例反过来理解 FBIK</h2>
+
+        <details open>
+          <summary>1. Effector 不是“脚的位置”，而是“脚应该去的目标”。</summary>
+          <p>在 FootLock 里，这个目标就是 <code>FootLockPos</code> 或投地后的锁点。动画脚当前在哪里不重要，PBIK 会把它往目标拉。</p>
+        </details>
+
+        <details>
+          <summary>2. Root 决定骨盆是否参与补偿。</summary>
+          <p>这里 <code>PelvisBoneName</code> 作为 PBIK Root。RootBehavior 决定骨盆是更自由地跟着脚锁调整，还是更接近输入姿势。</p>
+        </details>
+
+        <details>
+          <summary>3. PBIK 解的是“误差如何分摊”，不是单纯移动一个骨骼。</summary>
+          <p><code>TargetFootWS - AnimatedFootWS</code> 的差值被隐含进 IK 求解里，最终由脚、膝盖、髋部、骨盆一起承担。</p>
+        </details>
+
+        <details>
+          <summary>4. 释放阶段和锁定阶段一样重要。</summary>
+          <p>如果 Enable 一关就直接回动画脚，脚会跳。<code>LerpFootPos</code> 让目标逐帧追回动画脚，视觉上才像“松开”而不是“弹回”。</p>
+        </details>
+      </div>
+    </section>
+
+    <footer class="band dark">
+      <div class="inner footer">
+        <p><strong>来源：</strong>整理自《Unreal Control Rig FootLock 脚步锁定.md》和前一版《Unreal FBIK 配置与核心原理.md》。本页把 FBIK/PBIK 原理放进 <code>CRFL_FootLock</code> 案例里解释。</p>
+        <p><strong>验证依据：</strong>原笔记标注为 confirmed，基于 UE 5.5.2 commandlet 导出的 <code>CRFL_FootLock_full.json</code>、<code>CRFL_FootIKLibrary_full.json</code> 以及相关 C++ 源码链路。</p>
+      </div>
+    </footer>
+  </main>
+  <script>
+    (() => {
+      const canvas = document.getElementById("pbikCanvas");
+      const playButton = document.getElementById("playPbik");
+      const resetButton = document.getElementById("resetPbik");
+      const slider = document.getElementById("iterSlider");
+      const iterText = document.getElementById("iterText");
+      const errorText = document.getElementById("errorText");
+      const phaseText = document.getElementById("phaseText");
+
+      if (!canvas || !playButton || !resetButton || !slider) {
+        return;
+      }
+
+      const ctx = canvas.getContext("2d");
+      const maxIterations = Number(slider.max);
+      const inputPose = {
+        hip: { x: 350, y: 150 },
+        knee: { x: 475, y: 282 },
+        foot: { x: 575, y: 420 }
+      };
+      const targetFoot = { x: 486, y: 416 };
+      const thighLength = distance(inputPose.hip, inputPose.knee);
+      const shinLength = distance(inputPose.knee, inputPose.foot);
+      const states = buildStates();
+      let currentIteration = 0;
+      let playing = false;
+      let timer = 0;
+
+      function distance(a, b) {
+        const dx = b.x - a.x;
+        const dy = b.y - a.y;
+        return Math.hypot(dx, dy);
+      }
+
+      function clonePose(pose) {
+        return {
+          hip: { ...pose.hip },
+          knee: { ...pose.knee },
+          foot: { ...pose.foot }
+        };
+      }
+
+      function mixPoint(a, b, alpha) {
+        return {
+          x: a.x + (b.x - a.x) * alpha,
+          y: a.y + (b.y - a.y) * alpha
+        };
+      }
+
+      function normalize(dx, dy) {
+        const len = Math.hypot(dx, dy) || 1;
+        return { x: dx / len, y: dy / len };
+      }
+
+      function enforceSegment(a, b, length, anchorWeight) {
+        const dx = b.x - a.x;
+        const dy = b.y - a.y;
+        const len = Math.hypot(dx, dy) || 1;
+        const diff = len - length;
+        const dir = { x: dx / len, y: dy / len };
+        const moveA = diff * anchorWeight;
+        const moveB = diff * (1 - anchorWeight);
+        a.x += dir.x * moveA;
+        a.y += dir.y * moveA;
+        b.x -= dir.x * moveB;
+        b.y -= dir.y * moveB;
+      }
+
+      function solveOnce(pose) {
+        pose.foot = mixPoint(pose.foot, targetFoot, 0.64);
+
+        for (let i = 0; i < 4; i += 1) {
+          enforceSegment(pose.knee, pose.foot, shinLength, 0.72);
+          enforceSegment(pose.hip, pose.knee, thighLength, 0.22);
+        }
+
+        const pull = {
+          x: (targetFoot.x - pose.foot.x) * 0.05,
+          y: (targetFoot.y - pose.foot.y) * 0.05
+        };
+        pose.hip.x += pull.x;
+        pose.hip.y += pull.y;
+        pose.knee.x += pull.x * 0.65;
+        pose.knee.y += pull.y * 0.65;
+      }
+
+      function buildStates() {
+        const result = [clonePose(inputPose)];
+        const pose = clonePose(inputPose);
+        for (let i = 0; i < maxIterations; i += 1) {
+          solveOnce(pose);
+          result.push(clonePose(pose));
+        }
+        return result;
+      }
+
+      function drawGrid() {
+        ctx.save();
+        ctx.strokeStyle = "#edf2f5";
+        ctx.lineWidth = 1;
+        for (let x = 0; x <= canvas.width; x += 40) {
+          ctx.beginPath();
+          ctx.moveTo(x, 0);
+          ctx.lineTo(x, canvas.height);
+          ctx.stroke();
+        }
+        for (let y = 0; y <= canvas.height; y += 40) {
+          ctx.beginPath();
+          ctx.moveTo(0, y);
+          ctx.lineTo(canvas.width, y);
+          ctx.stroke();
+        }
+        ctx.restore();
+      }
+
+      function drawGround() {
+        ctx.save();
+        ctx.fillStyle = "#eef4f3";
+        ctx.fillRect(0, 430, canvas.width, 90);
+        ctx.strokeStyle = "#c8d8d2";
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(0, 430);
+        ctx.lineTo(canvas.width, 430);
+        ctx.stroke();
+        ctx.fillStyle = "#6c7b84";
+        ctx.font = "14px Microsoft YaHei, Arial";
+        ctx.fillText("地面 / 锁脚参考平面", 26, 458);
+        ctx.restore();
+      }
+
+      function drawPose(pose, options) {
+        const { stroke, fill, alpha = 1, dashed = false, width = 8, label } = options;
+        ctx.save();
+        ctx.globalAlpha = alpha;
+        ctx.lineWidth = width;
+        ctx.lineCap = "round";
+        ctx.lineJoin = "round";
+        ctx.strokeStyle = stroke;
+        if (dashed) {
+          ctx.setLineDash([12, 10]);
+        }
+
+        ctx.beginPath();
+        ctx.moveTo(pose.hip.x, pose.hip.y);
+        ctx.lineTo(pose.knee.x, pose.knee.y);
+        ctx.lineTo(pose.foot.x, pose.foot.y);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        drawJoint(pose.hip, fill, "骨盆");
+        drawJoint(pose.knee, fill, "膝盖");
+        drawFoot(pose.foot, fill);
+
+        if (label) {
+          ctx.fillStyle = fill;
+          ctx.font = "700 14px Microsoft YaHei, Arial";
+          ctx.fillText(label, pose.hip.x - 42, pose.hip.y - 22);
+        }
+        ctx.restore();
+      }
+
+      function drawJoint(point, color, label) {
+        ctx.save();
+        ctx.fillStyle = color;
+        ctx.strokeStyle = "#ffffff";
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.arc(point.x, point.y, 12, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+        ctx.fillStyle = "#24333c";
+        ctx.font = "12px Microsoft YaHei, Arial";
+        ctx.fillText(label, point.x + 14, point.y - 10);
+        ctx.restore();
+      }
+
+      function drawFoot(point, color) {
+        ctx.save();
+        ctx.translate(point.x, point.y);
+        ctx.rotate(-0.08);
+        ctx.fillStyle = color;
+        ctx.strokeStyle = "#ffffff";
+        ctx.lineWidth = 3;
+        roundedRect(-27, -12, 54, 24, 7);
+        ctx.fill();
+        ctx.stroke();
+        ctx.restore();
+      }
+
+      function roundedRect(x, y, width, height, radius) {
+        ctx.beginPath();
+        ctx.moveTo(x + radius, y);
+        ctx.lineTo(x + width - radius, y);
+        ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
+        ctx.lineTo(x + width, y + height - radius);
+        ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+        ctx.lineTo(x + radius, y + height);
+        ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
+        ctx.lineTo(x, y + radius);
+        ctx.quadraticCurveTo(x, y, x + radius, y);
+        ctx.closePath();
+      }
+
+      function drawTarget() {
+        ctx.save();
+        ctx.translate(targetFoot.x, targetFoot.y);
+        ctx.fillStyle = "#e25f4f";
+        ctx.strokeStyle = "#ffffff";
+        ctx.lineWidth = 3;
+        roundedRect(-22, -22, 44, 44, 8);
+        ctx.fill();
+        ctx.stroke();
+        ctx.strokeStyle = "#ffffff";
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.moveTo(-12, 0);
+        ctx.lineTo(12, 0);
+        ctx.moveTo(0, -12);
+        ctx.lineTo(0, 12);
+        ctx.stroke();
+        ctx.restore();
+
+        ctx.save();
+        ctx.fillStyle = "#24333c";
+        ctx.font = "700 14px Microsoft YaHei, Arial";
+        ctx.fillText("FootLockPos", targetFoot.x - 40, targetFoot.y + 48);
+        ctx.restore();
+      }
+
+      function drawArrow(from, to, color, label) {
+        const dx = to.x - from.x;
+        const dy = to.y - from.y;
+        const dir = normalize(dx, dy);
+        const end = {
+          x: to.x - dir.x * 26,
+          y: to.y - dir.y * 26
+        };
+        const angle = Math.atan2(dy, dx);
+
+        ctx.save();
+        ctx.strokeStyle = color;
+        ctx.fillStyle = color;
+        ctx.lineWidth = 3;
+        ctx.setLineDash([9, 7]);
+        ctx.beginPath();
+        ctx.moveTo(from.x, from.y);
+        ctx.lineTo(end.x, end.y);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.translate(end.x, end.y);
+        ctx.rotate(angle);
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.lineTo(-12, -7);
+        ctx.lineTo(-12, 7);
+        ctx.closePath();
+        ctx.fill();
+        ctx.restore();
+
+        ctx.save();
+        ctx.fillStyle = color;
+        ctx.font = "700 13px Microsoft YaHei, Arial";
+        ctx.fillText(label, (from.x + to.x) / 2 - 18, (from.y + to.y) / 2 - 14);
+        ctx.restore();
+      }
+
+      function drawConstraintRings(pose) {
+        ctx.save();
+        ctx.strokeStyle = "rgba(75, 159, 89, 0.35)";
+        ctx.lineWidth = 2;
+        ctx.setLineDash([7, 6]);
+        ctx.beginPath();
+        ctx.arc(pose.hip.x, pose.hip.y, thighLength, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(pose.knee.x, pose.knee.y, shinLength, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.fillStyle = "rgba(75, 159, 89, 0.92)";
+        ctx.font = "13px Microsoft YaHei, Arial";
+        ctx.fillText("长度约束：大腿/小腿尽量不被拉长", 28, 82);
+        ctx.restore();
+      }
+
+      function draw() {
+        const pose = states[currentIteration];
+        const error = distance(pose.foot, targetFoot);
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        drawGrid();
+        drawGround();
+        drawConstraintRings(pose);
+        drawPose(inputPose, {
+          stroke: "#d99a22",
+          fill: "#d99a22",
+          alpha: 0.42,
+          dashed: true,
+          width: 6,
+          label: "输入动画"
+        });
+        drawTarget();
+        drawArrow(pose.foot, targetFoot, "#4b9f59", "脚误差");
+        drawPose(pose, {
+          stroke: "#0f8b8d",
+          fill: "#0f8b8d",
+          alpha: 1,
+          dashed: false,
+          width: 9,
+          label: "PBIK 求解"
+        });
+        drawHud(error);
+        updateReadout(error);
+      }
+
+      function drawHud(error) {
+        ctx.save();
+        ctx.fillStyle = "rgba(31, 44, 53, 0.78)";
+        roundedRect(24, 24, 260, 42, 8);
+        ctx.fill();
+        ctx.fillStyle = "#ffffff";
+        ctx.font = "700 14px Microsoft YaHei, Arial";
+        ctx.fillText(`Iteration ${currentIteration} / ${maxIterations}   Error ${Math.round(error)} px`, 40, 51);
+        ctx.restore();
+      }
+
+      function updateReadout(error) {
+        iterText.textContent = `${currentIteration} / ${maxIterations}`;
+        errorText.textContent = `${Math.round(error)} px`;
+        if (currentIteration === 0) {
+          phaseText.textContent = "输入动画脚已经偏离锁点";
+        } else if (error > 22) {
+          phaseText.textContent = "Pin 约束持续把脚拉向锁点";
+        } else if (error > 6) {
+          phaseText.textContent = "腿长和骨盆正在分摊误差";
+        } else {
+          phaseText.textContent = "脚基本回到锁点附近";
+        }
+      }
+
+      function setIteration(value) {
+        currentIteration = Math.max(0, Math.min(maxIterations, Number(value)));
+        slider.value = String(currentIteration);
+        draw();
+      }
+
+      function stop() {
+        playing = false;
+        playButton.textContent = "播放";
+        if (timer) {
+          window.clearInterval(timer);
+          timer = 0;
+        }
+      }
+
+      function play() {
+        if (playing) {
+          stop();
+          return;
+        }
+        playing = true;
+        playButton.textContent = "暂停";
+        timer = window.setInterval(() => {
+          if (currentIteration >= maxIterations) {
+            stop();
+            return;
+          }
+          setIteration(currentIteration + 1);
+        }, 420);
+      }
+
+      playButton.addEventListener("click", play);
+      resetButton.addEventListener("click", () => {
+        stop();
+        setIteration(0);
+      });
+      slider.addEventListener("input", (event) => {
+        stop();
+        setIteration(event.target.value);
+      });
+
+      draw();
+    })();
+  </script>
+</body>
+</html>

@@ -178,3 +178,7 @@ UE Python API 在不同版本里会有差异。第一次解析陌生 Control Rig
 3. 用 `export_controlrig_full.py` 这类只读脚本导出 JSON。
 4. 读 JSON 中每个 `graphs` 条目的 `nodes`、`links` 和函数图，分析实际数据流。
 5. 若需要沉淀项目经验，只记录可复用流程、验证命令和边界，不复制大段资产数据。
+
+## Related
+
+- [[Unreal Control Rig FootLock 脚步锁定]]
