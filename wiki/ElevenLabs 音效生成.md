@@ -505,7 +505,7 @@ prompt: Dark cinematic riser into deep braam impact, horror trailer transition, 
 
 如果要把 ElevenLabs 生成的音效接入 Unreal 或 Unity，下游验证比 API 调通更重要：要在实际音量、混音总线、空间化和重复播放条件下听。短 UI 声和脚步声尤其需要多变体和随机化。
 
-Unreal 项目中的后续集成可参考 [[Unreal 音频系统与 MetaSounds]]，尤其是 Sound Wave 导入、MetaSound 随机化、Attenuation、Concurrency、Sound Class 和 Submix 路由。
+Unreal 项目中的后续集成可参考 [[Unreal 音频系统与 MetaSounds]]，尤其是 Sound Wave 导入、MetaSound 随机化、Attenuation、Concurrency、Sound Class 和 Submix 路由。Unity 项目中的后续集成可参考 [[Unity 音频系统]]，重点是 Audio Clip 导入、Audio Random Container 变体、Audio Source 3D 设置和 Audio Mixer 分类混音。
 
 ## 验证
 

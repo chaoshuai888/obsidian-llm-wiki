@@ -26,3 +26,5 @@ title: Operation Log
 ## [2026-05-14] revise | Unreal 模拟端移动插值 smoothing mode use cases added
 
 ## [2026-05-14] manual publish | Unreal FBIK 配置与核心原理
+
+## [2026-05-27] manual publish | Unity 音频系统
