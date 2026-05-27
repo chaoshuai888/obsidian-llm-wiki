@@ -66,12 +66,13 @@ POST https://api.elevenlabs.io/v1/sound-generation
 
 `loop` 默认 `false`，只适用于 `eleven_text_to_sound_v2`。适合雨声、风声、机器底噪、魔法能量层、空间 ambience、drone 等需要无缝循环的素材。对一次性点击、冲击、爆炸、脚步单响不要打开。
 
-`output_format` 是 query parameter，格式形如 `mp3_44100_128`。API reference 说明高码率 MP3、PCM 等格式会受套餐限制；官方 skill 列出了常用 MP3、PCM、Opus、u-law、a-law 形式。不要把格式能力写死，批量导出前用目标账号实际请求验证。
+`output_format` 是 query parameter，SDK 也可作为参数传入，格式形如 `pcm_44100` 或 `mp3_44100_128`。API reference 说明高码率 MP3、PCM 等格式会受套餐限制；官方 skill 列出了常用 MP3、PCM、Opus、u-law、a-law 形式。不要把格式能力写死，批量导出前用目标账号实际请求验证。使用 `pcm_44100` 时，API 返回的是 raw PCM，不是 WAV；最终要导入游戏或音频工具时，应再封装成带 `RIFF/WAVE` 头的 WAV。
 
 ## Python 最小示例
 
 ```python
 import os
+import wave
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -89,14 +90,19 @@ audio = client.text_to_sound_effects.convert(
     text="Short crisp sci-fi UI confirm click, bright digital blip, one-shot, no reverb",
     duration_seconds=1.0,
     prompt_influence=0.7,
+    output_format="pcm_44100",
     loop=False,
     model_id="eleven_text_to_sound_v2",
 )
 
-out = Path("ui_confirm.mp3")
-with out.open("wb") as f:
-    for chunk in audio:
-        f.write(chunk)
+pcm_bytes = b"".join(audio)
+
+out = Path("ui_confirm.wav")
+with wave.open(str(out), "wb") as wav:
+    wav.setnchannels(2)
+    wav.setsampwidth(2)
+    wav.setframerate(44100)
+    wav.writeframes(pcm_bytes)
 ```
 
 官方 quickstart 还演示了直接 `play(audio)` 播放结果。实际项目里更建议先落盘，记录 prompt 和参数，再进入人工试听与后期处理。
@@ -104,7 +110,7 @@ with out.open("wb") as f:
 ## cURL 示例
 
 ```bash
-curl -X POST "https://api.elevenlabs.io/v1/sound-generation?output_format=mp3_44100_128" \
+curl -X POST "https://api.elevenlabs.io/v1/sound-generation?output_format=pcm_44100" \
   -H "xi-api-key: $ELEVENLABS_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -114,8 +120,10 @@ curl -X POST "https://api.elevenlabs.io/v1/sound-generation?output_format=mp3_44
     "loop": false,
     "model_id": "eleven_text_to_sound_v2"
   }' \
-  --output horror_braam.mp3
+  --output horror_braam.pcm
 ```
+
+cURL 示例直接保存的是 raw PCM；如果最终需要 WAV，要用 Python `wave`、ffmpeg、sox 或项目音频管线封装为 44.1 kHz、16-bit、mono WAV。
 
 ## Prompt 写法
 
